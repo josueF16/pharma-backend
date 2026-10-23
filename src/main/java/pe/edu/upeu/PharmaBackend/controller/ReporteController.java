@@ -12,11 +12,14 @@ import pe.edu.upeu.PharmaBackend.dto.ProductoMasVendidoDTO;
 import pe.edu.upeu.PharmaBackend.dto.VentaPorCategoriaDTO;
 import pe.edu.upeu.PharmaBackend.service.service.ReporteService;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+
 import java.time.LocalDate;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/reportes")
+@PreAuthorize("hasAuthority('REPORTES_VER')")
 public class ReporteController {
 
     private final ReporteService reporteService;
