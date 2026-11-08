@@ -1,7 +1,7 @@
 package pe.edu.upeu.PharmaBackend.service.impl;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pe.edu.upeu.PharmaBackend.dto.CategoriaRequestDTO;
@@ -12,11 +12,8 @@ import pe.edu.upeu.PharmaBackend.exception.ReglaNegocioException;
 import pe.edu.upeu.PharmaBackend.repository.CategoriaRepository;
 import pe.edu.upeu.PharmaBackend.service.service.CategoriaService;
 
-import java.util.Optional;
-
 @Service
 public class CategoriaServiceImpl implements CategoriaService {
-    private static final Logger LOG = LoggerFactory.getLogger(CategoriaServiceImpl.class);
 
     private final CategoriaRepository categoriaRepository;
 
@@ -26,9 +23,11 @@ public class CategoriaServiceImpl implements CategoriaService {
 
     @Override
     @Transactional
+    @CacheEvict(cacheNames = "categorias", allEntries = true)
     public CategoriaResponseDTO create(CategoriaRequestDTO t) {
         String nombre = t.getNombre().trim();
-        if(categoriaRepository.existsByNombreIgnoreCase(nombre)){
+
+        if (categoriaRepository.existsByNombreIgnoreCase(nombre)) {
             throw new ReglaNegocioException(
                     "Ya existe una categoria con el nombre " + nombre
             );
@@ -46,12 +45,18 @@ public class CategoriaServiceImpl implements CategoriaService {
 
     @Override
     @Transactional
+    @CacheEvict(
+            cacheNames = {"categorias", "productos"},
+            allEntries = true
+    )
     public CategoriaResponseDTO update(Long aLong, CategoriaRequestDTO t) {
-        Categoria categoria = categoriaRepository.findById(aLong).orElseThrow(()->
-                new RecursosNoEncontradoException(
-                        "Categoria no encontrada con id: "+ aLong
-                )
-        );
+        Categoria categoria = categoriaRepository.findById(aLong)
+                .orElseThrow(() ->
+                        new RecursosNoEncontradoException(
+                                "Categoria no encontrada con id: " + aLong
+                        )
+                );
+
         categoria.setNombre(t.getNombre());
         categoria.setDescripcion(t.getDescripcion());
         categoria.setEstado(t.getEstado());
@@ -63,29 +68,38 @@ public class CategoriaServiceImpl implements CategoriaService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "categorias", key = "#p0")
     public CategoriaResponseDTO read(Long aLong) {
         Categoria categoria = categoriaRepository.findById(aLong)
-                .orElseThrow(()->
+                .orElseThrow(() ->
                         new RecursosNoEncontradoException(
-                                "Categoria no encontrada con id: "+ aLong
+                                "Categoria no encontrada con id: " + aLong
                         )
                 );
+
         return convertirResponse(categoria);
     }
 
     @Override
     @Transactional
+    @CacheEvict(
+            cacheNames = {"categorias", "productos"},
+            allEntries = true
+    )
     public void delete(Long aLong) {
-        Categoria categoria = categoriaRepository.findById(aLong).orElseThrow(()->
-                new RecursosNoEncontradoException(
-                        "Categoria no encontrada con id: "+ aLong
-                )
-        );
+        Categoria categoria = categoriaRepository.findById(aLong)
+                .orElseThrow(() ->
+                        new RecursosNoEncontradoException(
+                                "Categoria no encontrada con id: " + aLong
+                        )
+                );
+
         categoriaRepository.delete(categoria);
     }
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(cacheNames = "categorias", key = "'todas'")
     public Iterable<CategoriaResponseDTO> readAll() {
         return categoriaRepository.findAll()
                 .stream()
@@ -93,7 +107,7 @@ public class CategoriaServiceImpl implements CategoriaService {
                 .toList();
     }
 
-    private CategoriaResponseDTO convertirResponse(Categoria categoria){
+    private CategoriaResponseDTO convertirResponse(Categoria categoria) {
         return new CategoriaResponseDTO(
                 categoria.getId(),
                 categoria.getNombre(),
