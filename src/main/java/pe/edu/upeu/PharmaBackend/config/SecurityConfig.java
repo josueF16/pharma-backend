@@ -68,6 +68,17 @@ public class SecurityConfig {
                         .requestMatchers(RUTAS_PUBLICAS).permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
+                        // Estado del backend: consulta pública
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/actuator/health",
+                                "/actuator/health/**")
+                        .permitAll()
+
+                        // Monitoreo: requiere permiso administrativo
+                        .requestMatchers("/actuator", "/actuator/**")
+                        .hasAuthority(USUARIOS_ADMINISTRAR.name())
+
                         // Catálogo
                         .requestMatchers(
                                 HttpMethod.GET,
@@ -103,8 +114,7 @@ public class SecurityConfig {
                                 "/api/v1/roles/**")
                         .hasAuthority(USUARIOS_ADMINISTRAR.name())
 
-                        // Las demás rutas requieren autenticación.
-                        // Los reportes también usarán @PreAuthorize.
+                        // Los reportes también usan @PreAuthorize
                         .anyRequest().authenticated())
                 .exceptionHandling(errores -> errores
                         .authenticationEntryPoint(authenticationEntryPoint)
